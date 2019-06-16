@@ -7,13 +7,8 @@ import math
 def PMT(presentValue, interestRate, nMonths):
   r = interestRate / 12
   payment = presentValue * r*(1+r)**nMonths / ((1+r)**nMonths - 1)
-  return floor(payment)
+  return round(payment, 2)
 
 
 def getMonthlyInterest(balance, interestRate):
-  return floor(balance * interestRate / 12)
-
-# Floor number to 2 decimal places
-def floor(value):
-  dp = 2 # Number of decimal places
-  return math.floor(value * 10.0**dp) / 10.0**dp
+  return round(balance * interestRate / 12, 2)

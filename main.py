@@ -7,7 +7,9 @@
 
 import Components
 import Calc
+import Results
 
+import pandas as pd
 
 
 ##################################################
@@ -21,7 +23,6 @@ simulationLength = 100*12
 settings = {}
 
 # Mortgage settings
-settings['mortgage'] = {}
 settings['mortgage'] = {
   'balance': 130195,
   'interestRateFixed': 0.0212,
@@ -45,8 +46,12 @@ mortgage = Components.Loan('Mortgage', settings['mortgage']['balance'], settings
 for nMonth in range(1, simulationLength+1):
 
   ##################################################
+  # Initialise results storage
+  result = Results.Result(nMonth)
+
+  ##################################################
   # Mortgage
-  if mortgage.termRemaining > 0:
+  if mortgage.termCurrent <= settings['mortgage']['termLength']:
 
     # Check if moving from fixed to variable rate
     if nMonth is settings['mortgage']['interestRateVariableIntroduction'] :
@@ -58,13 +63,16 @@ for nMonth in range(1, simulationLength+1):
     # Calculate the amount to repay this month
     mortgage.calculateRepayment()
     if mortgage.balance + mortgage.interest < mortgage.repayment:
-      mortgage.repayment = mortgage.balance + mortgage.interest
+      mortgage.setRepayment(mortgage.balance + mortgage.interest)
 
-    # Action the repayment
-    mortgage.offsetBalance(mortgage.interest - mortgage.repayment)
+    # Perform the transactions
+    mortgage.performTransactions()
 
     # Update the mortgage term remaining
-    mortgage.decrementTermRemaining()
+    mortgage.incrementTermCurrent()
+
+    # Save the results
+    result.saveMortgage(mortgage)
   
   ##################################################
 

@@ -12,7 +12,8 @@ class Loan:
     self.name = name
     self.balance = balance
     self.interestRate = interestRate
-    self.termRemaining = termRemaining
+    self.termCurrent = 1
+    self.termRemaining = termRemaining-1
 
     self.calculateRepayment()
     self.calculateInterest()
@@ -21,13 +22,16 @@ class Loan:
     self.balance = newBalance
 
   def offsetBalance(self, deltaBalance):
-    self.balance += deltaBalance
+    self.balance = round(self.balance + deltaBalance, 2)
 
   def calculateRepayment(self):
-    self.repayment = Calc.PMT(self.balance, self.interestRate, self.termRemaining)
+    self.repayment = Calc.PMT(self.balance, self.interestRate, self.termRemaining+1)
 
   def setRepayment(self, newRepayment):
-    self.repayment = newRepayment
+    self.repayment = round(newRepayment, 2)
+
+  def performTransactions(self):
+    self.offsetBalance(self.interest - self.repayment)
 
   def setInterestRate(self, newInterestRate):
     self.interestRate = newInterestRate
@@ -35,7 +39,8 @@ class Loan:
   def calculateInterest(self):
     self.interest = Calc.getMonthlyInterest(self.balance, self.interestRate)
 
-  def decrementTermRemaining(self):
+  def incrementTermCurrent(self):
+    self.termCurrent += 1
     self.termRemaining -= 1
 
 
