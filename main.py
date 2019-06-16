@@ -5,11 +5,14 @@
 # IMPORTS
 ##################################################
 
+# Custom modules
 import Components
 import Calc
 import Results
 
+# Common Python modules
 import pandas as pd
+import math
 
 
 ##################################################
@@ -22,6 +25,12 @@ simulationLength = 100*12
 # Initialise settings dict
 settings = {}
 
+# Income
+settings['income'] = {
+  'salary': 31500,
+  'salariseRiseRate': 0.03
+}
+
 # Mortgage settings
 settings['mortgage'] = {
   'balance': 130195,
@@ -31,13 +40,38 @@ settings['mortgage'] = {
   'interestRateVariableIntroduction': 64
 }
 
+# Student Finance
+settings['slc'] = {
+  'balance': 26104.72,
+  'repaymentThreshold': 25725,
+  'repaymentFraction': 0.09,
+  'interestRateSalaryLowerBound': 25725,
+  'interestRateSalaryUpperBound': 46305,
+  'interestRateAdditionLowerBound': 0,
+  'interestRateAdditionUpperBound': 0.03,
+  'RPI': 0.033
+}
 
 ##################################################
 # Initialise
 ##################################################
 
-mortgage = Components.Loan('Mortgage', settings['mortgage']['balance'], settings['mortgage']['interestRateFixed'], settings['mortgage']['termLength'])
+# Mortgage
+mortgage = Components.Loan('Mortgage',
+  settings['mortgage']['balance'],
+  settings['mortgage']['interestRateFixed'],
+  1,
+  settings['mortgage']['termLength'])
 
+# Student Loan
+settings['slc']['interestRateSalaryRange'] = settings['slc']['interestRateSalaryUpperBound'] - settings['slc']['interestRateSalaryLowerBound']
+settings['slc']['interestRateAdditionRange'] = settings['slc']['interestRateAdditionUpperBound'] - settings['slc']['interestRateAdditionLowerBound']
+slc = Components.Loan('Student Finance',
+  settings['slc']['balance'],
+  0.033,
+  1,
+  30*12
+)
 
 ##################################################
 # Main Solve
@@ -62,19 +96,41 @@ for nMonth in range(1, simulationLength+1):
 
     # Calculate the amount to repay this month
     mortgage.calculateRepayment()
-    if mortgage.balance + mortgage.interest < mortgage.repayment:
-      mortgage.setRepayment(mortgage.balance + mortgage.interest)
+    mortgage.capRepayment()
 
     # Perform the transactions
     mortgage.performTransactions()
 
-    # Update the mortgage term remaining
-    mortgage.incrementTermCurrent()
-
     # Save the results
     result.saveMortgage(mortgage)
+
+    # Update the mortgage term remaining
+    mortgage.incrementTermCurrent()
   
   ##################################################
+  # Student Finance
+  if slc.termRemaining >= 0 and slc.balance > 0:
+
+    # Calculate new interest rate
+    salary = 31500
+    salaryScale = (salary-settings['slc']['interestRateSalaryLowerBound']) / settings['slc']['interestRateSalaryRange']
+    slc.setInterestRate(settings['slc']['RPI'] + settings['slc']['interestRateAdditionLowerBound'] + salaryScale*settings['slc']['interestRateAdditionRange'])
+
+    # Set the repayment amount
+    slc.setRepayment(settings['slc']['repaymentFraction'] * (salary-settings['slc']['repaymentThreshold']) / 12)
+    slc.capRepayment()
+
+    # Perform the transactions
+    slc.performTransactions()
+
+    # Update the mortgage term remaining
+    slc.incrementTermCurrent()
+
+    # Save the results
+    result.saveSLC(slc)
+
+  ##################################################
+  # Collate results
 
 
 ##################################################

@@ -8,12 +8,17 @@ import Calc
 # interest as a decimal
 # termLength in months
 class Loan:
-  def __init__(self, name, balance, interestRate, termRemaining):
+  def __init__(self, name, balance, interestRate, termCurrent, termRemaining):
     self.name = name
     self.balance = balance
     self.interestRate = interestRate
-    self.termCurrent = 1
+    self.termCurrent = termCurrent
     self.termRemaining = termRemaining-1
+
+    self.repaymentVoluntary = 0
+    self.repaymentPenalty = 0
+    self.repaymentCumulative = 0
+    self.interestCumulative = 0
 
     self.calculateRepayment()
     self.calculateInterest()
@@ -30,8 +35,14 @@ class Loan:
   def setRepayment(self, newRepayment):
     self.repayment = round(newRepayment, 2)
 
+  def capRepayment(self):
+    if self.balance + self.interest < self.repayment:
+      self.setRepayment(self.balance + self.interest)
+
   def performTransactions(self):
     self.offsetBalance(self.interest - self.repayment)
+    self.repaymentCumulative = round(self.repaymentCumulative + self.repayment, 2)
+    self.interestCumulative = round(self.interestCumulative + self.interest, 2)
 
   def setInterestRate(self, newInterestRate):
     self.interestRate = newInterestRate
